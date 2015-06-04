@@ -65,9 +65,6 @@ public final class RedisOutputStream extends FilterOutputStream {
     buf[count++] = '\n';
   }
 
-  private final static int[] sizeTable = { 0, 9, 99, 999, 9999, 99999, 999999, 9999999, 99999999,
-      999999999, Integer.MAX_VALUE };
-
   private final static byte[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
   private final static byte[] minInt = { '-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '8',
       '\r', '\n' };
@@ -83,10 +80,7 @@ public final class RedisOutputStream extends FilterOutputStream {
 
     for (int cached = 1; cached <= cacheMax; cached++) {
       int value = cached;
-      int size = 0;
-      while (value > sizeTable[size]) {
-        size++;
-      }
+		int size = stringSize(value);
 
       intCache[cached] = new byte[size + 2];
       int charPos = size;
@@ -122,16 +116,13 @@ public final class RedisOutputStream extends FilterOutputStream {
       value = -value;
     }
 
-    int size = 0;
-    while (value > sizeTable[size]) {
-      size++;
-    }
+	  int size = stringSize(value);
 
     ensureBuffer(size);
 
-    int charPos = count + size;
+    int bytePos = count + size;
     for (int i = 0; i < size; i++) {
-      buf[--charPos] = digits[value % 10];
+      buf[--bytePos] = digits[value % 10];
       value /= 10;
 	}
 
@@ -144,4 +135,15 @@ public final class RedisOutputStream extends FilterOutputStream {
     flushBuffer();
     out.flush();
   }
+
+
+	public static int stringSize(long x) {
+		long p = 10;
+		for (int i = 1; i < 19; i++) {
+			if (x < p)
+				return i;
+			p = 10 * p;
+		}
+		return 19;
+	}
 }
